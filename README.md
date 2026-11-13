@@ -1,8 +1,8 @@
-# CMG ATLAS Player Plugin
+# CMG Player
 
 Player utilities and progression operating consistently across the ATLAS cluster.
 
-This Chaotic Minds Gaming (CMG)-specific plugin extends [CMG Core](https://github.com/Chaotic-Minds-Collective/chaotic-minds-gaming-atlas-core) and the [ATLAS integration adapter](https://github.com/Chaotic-Minds-Collective/chaotic-minds-gaming-atlas); it does not replace either foundation.
+This Chaotic Minds Gaming-specific module extends [Chaotic Gaming Core](https://github.com/Chaotic-Minds-Collective/chaotic-gaming-core) and the [ATLAS integration adapter](https://github.com/Chaotic-Minds-Collective/chaotic-gaming-atlas); it does not replace either foundation.
 
 ## Feature scope
 - Suicide/self-respawn and stuck recovery
