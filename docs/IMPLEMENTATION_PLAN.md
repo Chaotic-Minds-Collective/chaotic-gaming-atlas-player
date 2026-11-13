@@ -1,4 +1,4 @@
-# CG Player — Implementation Plan
+# CMG Player — Implementation Plan
 
 ## Purpose
 Player utilities and progression operating consistently across the ATLAS cluster.
