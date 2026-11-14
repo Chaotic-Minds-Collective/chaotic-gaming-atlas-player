@@ -205,3 +205,52 @@ test("rejects timestamps without explicit timezones at each input boundary", () 
     approval: { caseId: "case-1", approvedBy: "admin-1", approvedAt: localTime }
   }), /timezone/);
 });
+
+for (const timestamp of [
+  "2026-11-14 11:00:00 (UTC",
+  "2026-11-14 11:00:00 (Z",
+  "2026-11-14 11:00:00 (+0100",
+  "2026-02-29T11:00:00Z",
+  "1900-02-29T11:00:00Z",
+  "2026-04-31T11:00:00Z",
+  "2026-00-14T11:00:00Z",
+  "2026-13-14T11:00:00Z",
+  "2026-11-00T11:00:00Z",
+  "2026-11-14T24:00:00Z",
+  "2026-11-14T11:60:00Z",
+  "2026-11-14T11:00:60Z",
+  "2026-11-14T11:00:00+24:00",
+  "2026-11-14T11:00:00+01:60"
+]) {
+  test(`rejects malformed timestamp at every boundary: ${timestamp}`, () => {
+    const data = fixtures();
+    assert.throws(() => createRecoveryCase({ ...data.recoveryCase, requestedAt: timestamp }), TypeError);
+    for (const [target, field, reason] of [
+      ["snapshot", "capturedAt", "snapshot_timestamp_invalid"],
+      ["lossEvent", "occurredAt", "loss_event_timestamp_invalid"],
+      ["recoveryCase", "requestedAt", "request_timestamp_invalid"]
+    ]) {
+      const changed = { ...data, [target]: { ...data[target], [field]: timestamp } };
+      const result = evaluateRecoveryEvidence(...Object.values(changed));
+      assert.equal(result.eligible, false);
+      assert.ok(result.reasons.includes(reason));
+    }
+    const evidence = evaluateRecoveryEvidence(...Object.values(data));
+    assert.throws(() => createRecoveryClaim({
+      recoveryCase: data.recoveryCase,
+      evidence,
+      approval: { caseId: "case-1", approvedBy: "admin-1", approvedAt: timestamp }
+    }), TypeError);
+  });
+}
+
+test("accepts valid leap days and explicit positive and negative offsets", () => {
+  const data = fixtures();
+  for (const requestedAt of ["2000-02-29T12:00:00Z", "2024-02-29T12:00:00.1Z"]) {
+    assert.equal(createRecoveryCase({ ...data.recoveryCase, requestedAt }).requestedAt, requestedAt);
+  }
+  for (const capturedAt of ["2026-11-14T12:00:00+01:00", "2026-11-14T06:00:00-0500"]) {
+    data.snapshot.capturedAt = capturedAt;
+    assert.equal(evaluateRecoveryEvidence(...Object.values(data)).eligible, true);
+  }
+});

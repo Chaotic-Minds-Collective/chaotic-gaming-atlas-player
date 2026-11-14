@@ -22,7 +22,13 @@ The provider adapter must translate source-specific data into these canonical fi
 
 <!-- coderabbit-ai-generated-section:v1:9017b7f5deab552384e2f377b35d7fe0c799b6384a59f7f5aa8fd8f706238ad8 -->
 
-Timestamps must include an explicit timezone (for example, `2026-11-14T11:00:00.000Z` or `2026-11-14T12:00:00.000+01:00`). A snapshot must strictly precede the loss instant; equal timestamps are insufficient.
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:8f8b1639ebbfce7bc690c7452938494ff76fb5a4e9d0f0794ee4b10e6843a10f -->
+
+Timestamps must be complete ISO date-times with valid calendar dates, hours `00`–`23`, minutes and seconds `00`–`59`, and an explicit timezone: `YYYY-MM-DDTHH:mm:ss[.sss]Z` or a numeric offset `±HH:mm` (also accepted without the colon). Fractional seconds are optional and support one to three digits. Legacy free-form dates and timezone names are rejected to prevent host-dependent parsing. Examples: `2026-11-14T11:00:00.000Z` and `2026-11-14T12:00:00.000+01:00`. A snapshot must strictly precede the loss instant; equal timestamps are insufficient.
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 Evidence results bind the case ID, kind, requester, owner, asset, snapshot and loss-event IDs, cluster/grid/server scope, and exact request timestamp. Preparing a claim requires those fields to match the evaluated case. This binding checks consistency; callers remain responsible for authenticating evidence and approvals.
 

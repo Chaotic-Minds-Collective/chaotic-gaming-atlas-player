@@ -15,11 +15,19 @@ function requiredString(value, field) {
 
 function validDate(value, field) {
   requiredString(value, field);
-  if (!/(?:Z|[+-]\d{2}:?\d{2}|GMT|UTC)$/i.test(value)) {
-    throw new TypeError(`${field} must include an explicit timezone`);
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d{1,3})?(Z|[+-](\d{2}):?(\d{2}))$/i.exec(value);
+  if (!match) {
+    throw new TypeError(`${field} must be an ISO date-time with an explicit timezone`);
   }
+  const [, year, month, day, hour, minute, second, , offsetHour = "0", offsetMinute = "0"] = match;
+  const leapYear = +year % 4 === 0 && (+year % 100 !== 0 || +year % 400 === 0);
+  const daysInMonth = [31, leapYear ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
   const time = Date.parse(value);
-  if (!Number.isFinite(time)) throw new TypeError(`${field} must be a valid date-time`);
+  if (+month < 1 || +month > 12 || +day < 1 || +day > daysInMonth[+month - 1]
+    || +hour > 23 || +minute > 59 || +second > 59 || +offsetHour > 23 || +offsetMinute > 59
+    || !Number.isFinite(time)) {
+    throw new TypeError(`${field} must be a valid date-time`);
+  }
   return time;
 }
 
