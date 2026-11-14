@@ -140,6 +140,9 @@ export function evaluateRecoveryEvidence(recoveryCase, snapshot, lossEvent) {
   }
 
   return immutableResult({
+    caseId: recoveryCase.caseId,
+    snapshotId: recoveryCase.snapshotId,
+    lossEventId: recoveryCase.lossEventId,
     eligible: reasons.length === 0,
     reasons: Object.freeze(reasons)
   });
@@ -151,6 +154,11 @@ export function createRecoveryClaim({ recoveryCase, evidence, approval }) {
   }
   if (!evidence?.eligible) {
     throw new Error("recovery evidence must be eligible before approval");
+  }
+  if (evidence.caseId !== recoveryCase.caseId
+    || evidence.snapshotId !== recoveryCase.snapshotId
+    || evidence.lossEventId !== recoveryCase.lossEventId) {
+    throw new Error("recovery evidence does not belong to this case");
   }
   if (!approval || typeof approval !== "object") {
     throw new TypeError("explicit approval is required");

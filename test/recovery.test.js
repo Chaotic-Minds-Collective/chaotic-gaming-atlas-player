@@ -57,6 +57,9 @@ for (const kind of ["inventory", "tame", "ship"]) {
   test(`${kind} recovery evidence is eligible when identity, scope, and time match`, () => {
     const data = fixtures(kind);
     assert.deepEqual(evaluateRecoveryEvidence(...Object.values(data)), {
+      caseId: "case-1",
+      snapshotId: "snapshot-1",
+      lossEventId: "event-1",
       eligible: true,
       reasons: []
     });
@@ -108,6 +111,21 @@ test("creates a stable, scoped claim only after evidence and approval", () => {
   assert.equal(claim.status, "prepared");
   assert.equal(claim.idempotencyKey, "cmg-recovery:v1:4:ship:6:case-1");
   assert.equal(claim.scope.gridId, "grid-a");
+});
+
+test("does not allow evidence from a different case to authorize a claim", () => {
+  const first = fixtures();
+  const second = fixtures();
+  const otherCase = createRecoveryCase({
+    ...second.recoveryCase,
+    caseId: "case-2"
+  });
+  const evidence = evaluateRecoveryEvidence(...Object.values(first));
+  assert.throws(() => createRecoveryClaim({
+    recoveryCase: otherCase,
+    evidence,
+    approval: { caseId: "case-2", approvedBy: "admin-1", approvedAt: "2026-11-14T12:05:00.000Z" }
+  }), /does not belong/);
 });
 
 test("requires a matching case ID for approval", () => {
