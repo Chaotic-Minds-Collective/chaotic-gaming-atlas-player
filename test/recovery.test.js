@@ -58,6 +58,12 @@ for (const kind of ["inventory", "tame", "ship"]) {
     const data = fixtures(kind);
     assert.deepEqual(evaluateRecoveryEvidence(...Object.values(data)), {
       caseId: "case-1",
+      kind,
+      requesterId: data.recoveryCase.requesterId,
+      ownerId: data.recoveryCase.ownerId,
+      assetId: data.recoveryCase.assetId,
+      scope,
+      requestedAt: data.recoveryCase.requestedAt,
       snapshotId: "snapshot-1",
       lossEventId: "event-1",
       eligible: true,
@@ -150,4 +156,52 @@ test("requires a provider receipt to mark a claim restored", () => {
   assert.equal(restored.status, "restored");
   assert.equal(completeRecoveryClaim(restored, "provider-operation-9"), restored);
   assert.throws(() => completeRecoveryClaim(restored, "different-operation"), /different provider receipt/);
+});
+
+for (const changes of [
+  { kind: "tame" },
+  { requesterId: "another-requester" },
+  { ownerId: "another-owner" },
+  { assetId: "another-asset" },
+  ...["clusterId", "gridId", "serverId"].map(field => ({ scope: { ...scope, [field]: "other" } })),
+  { requestedAt: "2026-11-14T12:01:00.000Z" }
+]) {
+  test(`rejects reused evidence when case fields change: ${JSON.stringify(changes)}`, () => {
+    const data = fixtures();
+    const evidence = evaluateRecoveryEvidence(...Object.values(data));
+    const otherCase = createRecoveryCase({ ...data.recoveryCase, ...changes });
+    assert.throws(() => createRecoveryClaim({
+      recoveryCase: otherCase,
+      evidence,
+      approval: { caseId: "case-1", approvedBy: "admin-1", approvedAt: "2026-11-14T12:05:00.000Z" }
+    }), /does not belong/);
+  });
+}
+
+test("requires a strictly pre-loss snapshot, comparing instants across timezones", () => {
+  const data = fixtures();
+  data.snapshot.capturedAt = "2026-11-14T12:30:00.000+01:00";
+  assert.ok(evaluateRecoveryEvidence(...Object.values(data)).reasons.includes("snapshot_after_loss"));
+  data.snapshot.capturedAt = "2026-11-14T12:29:59.999+01:00";
+  assert.equal(evaluateRecoveryEvidence(...Object.values(data)).eligible, true);
+});
+
+test("rejects timestamps without explicit timezones at each input boundary", () => {
+  const data = fixtures();
+  const localTime = "2026-11-14T12:00:00.000";
+  assert.throws(() => createRecoveryCase({ ...data.recoveryCase, requestedAt: localTime }), /timezone/);
+  for (const [target, field, reason] of [
+    ["snapshot", "capturedAt", "snapshot_timestamp_invalid"],
+    ["lossEvent", "occurredAt", "loss_event_timestamp_invalid"],
+    ["recoveryCase", "requestedAt", "request_timestamp_invalid"]
+  ]) {
+    const changed = { ...data, [target]: { ...data[target], [field]: localTime } };
+    assert.ok(evaluateRecoveryEvidence(...Object.values(changed)).reasons.includes(reason));
+  }
+  const evidence = evaluateRecoveryEvidence(...Object.values(data));
+  assert.throws(() => createRecoveryClaim({
+    recoveryCase: data.recoveryCase,
+    evidence,
+    approval: { caseId: "case-1", approvedBy: "admin-1", approvedAt: localTime }
+  }), /timezone/);
 });

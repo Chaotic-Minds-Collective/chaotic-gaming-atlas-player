@@ -18,7 +18,17 @@ The provider adapter must translate source-specific data into these canonical fi
 - Loss event: `eventId`, `eventType`, `assetId`, `ownerId`, `scope`, and `occurredAt`.
 - Scope: `clusterId`, `gridId`, and `serverId`.
 
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:9017b7f5deab552384e2f377b35d7fe0c799b6384a59f7f5aa8fd8f706238ad8 -->
+
+Timestamps must include an explicit timezone (for example, `2026-11-14T11:00:00.000Z` or `2026-11-14T12:00:00.000+01:00`). A snapshot must strictly precede the loss instant; equal timestamps are insufficient.
+
+Evidence results bind the case ID, kind, requester, owner, asset, snapshot and loss-event IDs, cluster/grid/server scope, and exact request timestamp. Preparing a claim requires those fields to match the evaluated case. This binding checks consistency; callers remain responsible for authenticating evidence and approvals.
+
 The initial loss-event mapping is deliberately narrow:
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 | Recovery type | Required normalized loss event |
 | --- | --- |

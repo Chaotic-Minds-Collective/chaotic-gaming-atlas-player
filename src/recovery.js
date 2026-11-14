@@ -15,6 +15,9 @@ function requiredString(value, field) {
 
 function validDate(value, field) {
   requiredString(value, field);
+  if (!/(?:Z|[+-]\d{2}:?\d{2}|GMT|UTC)$/i.test(value)) {
+    throw new TypeError(`${field} must include an explicit timezone`);
+  }
   const time = Date.parse(value);
   if (!Number.isFinite(time)) throw new TypeError(`${field} must be a valid date-time`);
   return time;
@@ -129,7 +132,7 @@ export function evaluateRecoveryEvidence(recoveryCase, snapshot, lossEvent) {
     reasons.push("request_timestamp_invalid");
   }
 
-  if (capturedAt !== undefined && occurredAt !== undefined && capturedAt > occurredAt) {
+  if (capturedAt !== undefined && occurredAt !== undefined && capturedAt >= occurredAt) {
     reasons.push("snapshot_after_loss");
   }
   if (occurredAt !== undefined && requestedAt !== undefined && requestedAt < occurredAt) {
@@ -141,6 +144,12 @@ export function evaluateRecoveryEvidence(recoveryCase, snapshot, lossEvent) {
 
   return immutableResult({
     caseId: recoveryCase.caseId,
+    kind: recoveryCase.kind,
+    requesterId: recoveryCase.requesterId,
+    ownerId: recoveryCase.ownerId,
+    assetId: recoveryCase.assetId,
+    scope: validScope(recoveryCase.scope),
+    requestedAt: recoveryCase.requestedAt,
     snapshotId: recoveryCase.snapshotId,
     lossEventId: recoveryCase.lossEventId,
     eligible: reasons.length === 0,
@@ -157,7 +166,13 @@ export function createRecoveryClaim({ recoveryCase, evidence, approval }) {
   }
   if (evidence.caseId !== recoveryCase.caseId
     || evidence.snapshotId !== recoveryCase.snapshotId
-    || evidence.lossEventId !== recoveryCase.lossEventId) {
+    || evidence.lossEventId !== recoveryCase.lossEventId
+    || evidence.kind !== recoveryCase.kind
+    || evidence.requesterId !== recoveryCase.requesterId
+    || evidence.ownerId !== recoveryCase.ownerId
+    || evidence.assetId !== recoveryCase.assetId
+    || !sameScope(evidence.scope, recoveryCase.scope)
+    || evidence.requestedAt !== recoveryCase.requestedAt) {
     throw new Error("recovery evidence does not belong to this case");
   }
   if (!approval || typeof approval !== "object") {
